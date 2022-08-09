@@ -9,6 +9,8 @@ import {
 import { BUTTON_SINGLE_STYLE, BUTTON_SINGLE_DISABLED_STYLE } from "./ActionStyles";
 import { DEVICE_TYPE_MAP } from './ConstantDeviceTypes'
 import { useUniverseContract } from "./UniverseContract";
+import { DEVICE_COLOR_MAP } from "./ConstantDeviceColors";
+import DEVICE_DIM_MAP from "./ConstantDeviceDimMap";
 
 const button_style = {
     fontSize:'12px',
@@ -27,7 +29,7 @@ export function DeployDeviceInterface (props) {
         contract,
         method: 'player_deploy_device_by_grid'
     })
-    const typ = props.typ
+    const { typ, onDeploy } = props
     const x = props.grid_x
     const y = props.grid_y
 
@@ -38,10 +40,11 @@ export function DeployDeviceInterface (props) {
         }
         else {
             console.log (`deploy device clicked! (x,y,type) = (${x},${y},${typ})`)
-            invoke ({ args: [
-                typ,
-                {x:x, y:y}
-            ] })
+            onDeploy({ type: typ, dimension: DEVICE_DIM_MAP.get(typ), color: DEVICE_COLOR_MAP.get(typ) })
+            // invoke ({ args: [
+            //     typ,
+            //     {x:x, y:y}
+            // ] })
         }
     }
 

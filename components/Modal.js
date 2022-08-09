@@ -23,7 +23,7 @@ export function Modal (props) {
     //
     // Build information to be shown in popup window
     //
-    const info = props.info
+    const { info, onDeployDevice } = props
     var title = ""
     var grids = ""
     var display_left_top = null
@@ -169,7 +169,7 @@ export function Modal (props) {
                     // console.log (`device type ${i} have_nonzero_balance=${have_nonzero_balance}`)
 
                     options.push (
-                        <DeployDeviceInterface typ={i} grid_x={grid.x} grid_y={grid.y} have_nonzero_balance={have_nonzero_balance}/>
+                        <DeployDeviceInterface typ={i} grid_x={grid.x} grid_y={grid.y} have_nonzero_balance={have_nonzero_balance} onDeploy={onDeployDevice} />
                     )
                 }
             }

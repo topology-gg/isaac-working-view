@@ -235,6 +235,7 @@ export default function GameWorld() {
     const _cursorGridRectRef = useRef();
     const _cursorFaceRectRef = useRef();
     const _cursorHoverDeviceRectRef = useRef();
+    const _devicePlacementAssistRef = useRef();
     const modalVisibilityRef = useRef(false)
     const _displayModeRef = useRef('devices')
     const _displayModeTextRef = useRef('');
@@ -250,6 +251,7 @@ export default function GameWorld() {
     const _mouseStateRef = useRef('up'); // up => down => up
     const _selectStateRef = useRef('idle'); // idle => select => popup => idle
     const _selectedGridsRef = useRef([]);
+    const _deviceBeingPlacedRef = useRef(null); // Store the device placement object
 
     const _utxAnimRectsRef = useRef([]); // references to the animation rectangles
     const _utxAnimGridsRef = useRef([]); // references to the animation grids for each rectangle (2d array)
@@ -282,6 +284,13 @@ export default function GameWorld() {
 
     const [hudLines, setHudLines] = useState([])
     const [hudVisible, setHudVisible] = useState (false)
+    const [deviceBeingPlaced, _setDeviceBeingPlaced] = useState(null)
+
+    // Setter method for both the ref and the state
+    const setDeviceBeingPlaced = (device) => {
+        _deviceBeingPlacedRef.current = device
+        _setDeviceBeingPlaced(device)
+    }
 
     // const [hoverTransferDeviceRect, setHoverTransferDeviceRect] = useState(false)
 
@@ -314,12 +323,16 @@ export default function GameWorld() {
             _utxAnimRectsRef.current = []
             _utxAnimGridsRef.current = []
             _utxAnimGridIndicesRef.current = []
+            _deviceBeingPlacedRef.current = null
+            _cursorGridRectRef.current = null
 
             //
             // draw the world
             //
             drawWorld (_canvasRef.current)
             setHudVisible (true)
+
+            console.log(db_macro_states, db_civ_state, db_player_balances, db_deployed_devices, db_utx_sets, db_deployed_pgs, db_deployed_harvesters, db_deployed_transformers, db_deployed_upsfs, db_deployed_ndpes)
         }
     }, [db_macro_states, db_civ_state, db_player_balances, db_deployed_devices, db_utx_sets, db_deployed_pgs, db_deployed_harvesters, db_deployed_transformers, db_deployed_upsfs, db_deployed_ndpes]);
 
@@ -538,7 +551,7 @@ export default function GameWorld() {
         const bool_in_range = is_valid_coord (x_grid, y_grid)
         const bool_in_idle = (_selectStateRef.current === 'idle')
 
-        if (bool_in_idle && bool_in_range) {
+        if (bool_in_idle && bool_in_range && !_deviceBeingPlacedRef.current) {
             _selectStateRef.current = 'select'
             _selectedGridsRef.current.push ({x: x_grid, y: y_grid})
 
@@ -606,7 +619,12 @@ export default function GameWorld() {
         const bool_in_range = is_valid_coord (x_grid, y_grid)
         const bool_not_empty = (_selectedGridsRef.current.length !== 0)
 
-        if (bool_in_range && bool_not_empty) {
+        if (_deviceBeingPlacedRef.current) {
+            // TODO: check if device placement is valid
+            console.log("invoke", ({ args: [_deviceBeingPlacedRef.current.type, { x: x_grid, y: y_grid }] }))
+            setDeviceBeingPlaced(null)
+            // TODO: set ghost placement
+        } else if (bool_in_range && bool_not_empty) {
             _selectStateRef.current = 'popup'
             setModalVisibility (true)
             modalVisibilityRef.current = true
@@ -691,9 +709,15 @@ export default function GameWorld() {
         if (modalVisibilityRef.current) {
             // if modal is up, only handle ESC key
             if (ev.key === "Escape") {
+                console.log("escape key pressed, hiding popup")
                 hidePopup ()
             }
             return
+        }
+
+        if (ev.key === "Escape") {
+            console.log("escape key pressed, resetting device placement")
+            setDeviceBeingPlaced(null)
         }
 
         if (ev.key === 'c') {
@@ -860,10 +884,23 @@ export default function GameWorld() {
         fill: '',
         selectable: false,
         hoverCursor: 'default',
-        visible: true,
+        visible: false,
         stroke: HOVER_DEVICE_COLOR,
         strokeWidth: STROKE_WIDTH_GRID_COURSE,
     });
+
+    const devicePlacementAssist = new fabric.Rect({
+        height: GRID,
+        width: GRID,
+        left: PAD_X,
+        top: PAD_Y,
+        fill: '',
+        strokeWidth: 0,
+        selectable: false,
+        hoverCursor: 'default',
+        visible: false,
+        opacity: 0.5,
+    })
 
     //
     // text box showing current display mode
@@ -889,7 +926,9 @@ export default function GameWorld() {
             backgroundColor: CANVAS_BG,
             selection: false,
             fireRightClick: true,
-            stopContextMenu: true
+            stopContextMenu: true,
+            defaultCursor: 'none',
+            hoverCursor: 'none',
         })
 
         _canvasRef.current.on("mouse:move" ,function(opt){
@@ -1619,6 +1658,9 @@ export default function GameWorld() {
         canvi.add (cursorHoverDeviceRect)
         _cursorHoverDeviceRectRef.current = cursorHoverDeviceRect
 
+        canvi.add (devicePlacementAssist)
+        _devicePlacementAssistRef.current = devicePlacementAssist
+
         canvi.renderAll();
     }
 
@@ -1905,7 +1947,7 @@ export default function GameWorld() {
 
     function drawAssistObject (canvi, mPosNorm) {
 
-        if (_cursorGridRectRef.current && _cursorFaceRectRef.current && _cursorHoverDeviceRectRef.current) {
+        if (_cursorGridRectRef.current && _cursorFaceRectRef.current && _cursorHoverDeviceRectRef.current && _devicePlacementAssistRef.current) {
             if (mPosNorm.x.toString() === '-') {
                 //
                 // Show face & coordinate textbox
@@ -1966,6 +2008,7 @@ export default function GameWorld() {
                 _cursorGridRectRef.current.left = PAD_X + mPosNorm.x*GRID
                 _cursorGridRectRef.current.top  = PAD_Y + (SIDE*3 - mPosNorm.y - 1)*GRID
                 _cursorGridRectRef.current.visible = true
+                _canvasRef.current.hoverCursor = 'none'
 
 
 
@@ -1988,10 +2031,22 @@ export default function GameWorld() {
                 } else {
                   _cursorHoverDeviceRectRef.current.visible = false
                 }
+
+                if (deviceBeingPlaced) {
+                  _devicePlacementAssistRef.current.left = PAD_X + mPosNorm.x * GRID
+                  _devicePlacementAssistRef.current.top = PAD_Y + (SIDE * 3 - mPosNorm.y - 1) * GRID
+                  _devicePlacementAssistRef.current.width = GRID * deviceBeingPlaced.dimension
+                  _devicePlacementAssistRef.current.height = GRID * deviceBeingPlaced.dimension
+                  _devicePlacementAssistRef.current.fill = deviceBeingPlaced.color
+                  _devicePlacementAssistRef.current.visible = true
+                } else {
+                  _devicePlacementAssistRef.current.visible = false
+                }
             }
             _cursorGridRectRef.current.dirty = true
             _cursorFaceRectRef.current.dirty = true
             _cursorHoverDeviceRectRef.current.dirty = true
+            _devicePlacementAssistRef.current.dirty = true
 
             canvi.renderAll();
         }
@@ -1999,7 +2054,7 @@ export default function GameWorld() {
 
     useEffect (() => {
         drawAssistObject (_canvasRef.current, MousePositionNorm)
-    }, [MousePositionNorm]);
+    }, [MousePositionNorm, deviceBeingPlaced]);
 
     function drawAssistObjects (canvi, grids) {
         if (_coordTextRef.current) {
@@ -2022,7 +2077,6 @@ export default function GameWorld() {
     }, [selectedGrids])
 
     function handleMouseMove(ev) {
-
         // const x = ev.pageX
         // const y = ev.pageY
 
@@ -2049,6 +2103,12 @@ export default function GameWorld() {
         }
     }
 
+    function handleDeployDevice(device) {
+        console.log(device)
+        setDeviceBeingPlaced(device)
+        hidePopup()
+    }
+
     //
     // Return component
     // Reference:
@@ -2071,6 +2131,7 @@ export default function GameWorld() {
                 account = {account}
                 in_civ = {accountInCiv}
                 device_balance = {accountDeviceBalance}
+                onDeployDevice={handleDeployDevice}
             />
 
             <HUD lines={hudLines} universeActive={universeActive}/>
