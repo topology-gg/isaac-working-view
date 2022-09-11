@@ -33,7 +33,7 @@ export default function GameStatsDevices(props) {
             if (account_int_str === entry['account']) {
                 player_balance = entry
 
-                for (const i=0; i<16; i++) {
+                for (let i=0; i<16; i++) {
                     arr_values[i] = entry [i.toString()]
                 }
             }

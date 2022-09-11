@@ -175,7 +175,7 @@ export function Modal (props) {
                     //
                     // Construct can_build for each device type
                     //
-                    for (const i=0; i<16; i++){ // iterate over all device types
+                    for (let i=0; i<16; i++){ // iterate over all device types
                         var can_build = true
                         for (var key of Object.keys(balances)) {
                             const have = balances[key]
@@ -201,7 +201,7 @@ export function Modal (props) {
                 content1 += "Grid not populated"
                 bool_display_left_bottom = false
 
-                for (const i=0; i<16; i++) {
+                for (let i=0; i<16; i++) {
                     if ([12,13].includes(i)) { continue; }
 
                     const have_nonzero_balance = props.device_balance[i] > 0 ? true : false
