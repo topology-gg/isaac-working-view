@@ -1237,7 +1237,7 @@ export default function GameWorld(props) {
 
         for (var element of [0,2,4,6,8]) {
 
-            var collection = {}
+            const collection = {}
             for (var face of [0,1,2,3,4,5]) {
 
                 const face_ori = find_face_ori (face)
