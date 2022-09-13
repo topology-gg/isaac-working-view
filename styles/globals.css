@@ -232,22 +232,16 @@ button[disabled] {
     display: flex;
     flex-direction: column;
     order: 1;
-    width: 20em;
-    padding-left: 2.5em;
+    flex: 1;
+    padding: 2.5em;
     background-color: #3e4766;
+    gap: 35px;
+    overflow-y: scroll;
+    color: #ABB2CF;
 }
 
-.right-child-title {
-    margin: 16px 0;
-}
-
-.right-child-container {
-    display: flex;
-    flex-direction: column;
-}
-
-.right-child-middle {
-    margin-bottom: 16px;
+.right-child-container h4 {
+    color: #D5DBF4;
 }
 
 .right-child-bottom {
@@ -258,8 +252,6 @@ button[disabled] {
 
 .wallet-button {
     display: block;
-    width: 170px;
-    margin-bottom: 10px;
 }
 .wallet-button:hover {
     background-color:#FFCE93;
@@ -293,6 +285,7 @@ tr.nonfungible_device:hover td {
 }
 
 h4 {
+    font-size: 14px;
     margin-top: 0.5em;
     margin-bottom: 0.5em;
 }
@@ -301,11 +294,6 @@ h5 {
     margin-top: 0em;
     margin-bottom: 0.5em;
     text-decoration: underline;
-}
-
-.connected_account {
-    font-size: 0.8em;
-    padding-top: 0.6em;
 }
 
 .cover_art_back {
