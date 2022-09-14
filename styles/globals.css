@@ -226,6 +226,15 @@ button[disabled] {
 .left-child-container {
     display: flex;
     order: 0;
+    flex: 1;
+}
+
+.game-title {
+    font-family: Anoxic;
+    font-size: 40px;
+    margin: 0;
+    text-align: center;
+    padding: 10px 0;
 }
 
 .right-child-container {
@@ -233,7 +242,8 @@ button[disabled] {
     flex-direction: column;
     order: 1;
     flex: 1;
-    padding: 2.5em;
+    flex-basis: 300px;
+    padding: 35px;
     background-color: #3e4766;
     gap: 35px;
     overflow-y: scroll;

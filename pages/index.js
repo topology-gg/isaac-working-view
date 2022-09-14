@@ -61,7 +61,7 @@ function Home() {
             <div className="right-child-container" style={{display: universeActive?'flex':'none'}}>
 
                 <div className="right-child-title">
-                    <h3 style={{fontFamily:'Anoxic',fontSize:'40px',margin:'0'}}>
+                    <h3 className="game-title">
                         ISAAC
                     </h3>
                 </div>
