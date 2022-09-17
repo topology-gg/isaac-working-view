@@ -54,6 +54,7 @@ import {
     GRID_ASSIST_TBOX,
     CANVAS_BG,
     STROKE,
+    PANEL_W,
 } from "../lib/constants/gameWorld";
 import deviceFromGridCoord from '../lib/deviceFromGridCoord'
 import drawPendingDevices from "../lib/helpers/drawPendingDevices";
@@ -698,11 +699,11 @@ export default function GameWorld(props) {
     //
     useEffect (() => {
 
-        const { height: windowHeight } = getWindowDimensions()
+        const { height: windowHeight, width: windowWidth } = getWindowDimensions()
 
         _canvasRef.current = new fabric.Canvas('c', {
             height: windowHeight,
-            width: CANVAS_W,
+            width: windowWidth - PANEL_W,
             backgroundColor: CANVAS_BG,
             selection: false,
             fireRightClick: true,
@@ -834,6 +835,15 @@ export default function GameWorld(props) {
 
         document.addEventListener("keydown", handleKeyDown, false);
         document.addEventListener("keyup", handleKeyUp, false);
+
+        const handleResize = (event) => {
+            if (!_canvasRef.current) return
+
+            _canvasRef.current.setWidth(window.innerWidth - PANEL_W);
+            _canvasRef.current.setHeight(window.innerHeight);
+        }
+        window.addEventListener("resize", handleResize);
+
         return () => {
 
             // Remove canvas elements
@@ -841,6 +851,7 @@ export default function GameWorld(props) {
 
             document.removeEventListener("keydown", handleKeyDown, false);
             document.removeEventListener("keyup", handleKeyUp, false);
+            document.removeEventListener("resize", handleResize);
         };
 
     }, []);

@@ -39,9 +39,7 @@ export function ConnectWallet() {
 
     return (
         <>
-            <p className="connected_account"
-                style={{padding:'0',margin:'0',height:'25px',verticalAlign:'middle',fontSize:'12px'}}
-            >
+            <p>
                 Connected account: {String(account).slice(0,5)}...{String(account).slice(-4)}
             </p>
             <button className='wallet-button' onClick={() => disconnect()}>
