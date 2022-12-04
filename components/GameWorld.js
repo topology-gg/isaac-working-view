@@ -78,6 +78,10 @@ import useDebouncedEffect from "../lib/hooks/useDebouncedEffect"
 import usePlacementAssist from "../lib/hooks/usePlacementAssist"
 import useSelectedGrids from "../lib/hooks/useSelectedGrids"
 import FloatingMessage from "./FloatingMessage"
+import setupZoomableGridPattern from "../lib/helpers/setupZoomableGridPattern";
+
+const MIN_ZOOM = 0.6
+const MAX_ZOOM = 16
 
 //
 // Note: reading requirement (translated to Apibara integration design)
@@ -145,6 +149,8 @@ export default function GameWorld(props) {
     const modalVisibilityRef = useRef(false)
     const _displayModeRef = useRef('devices')
     const _displayModeTextRef = useRef('');
+    const gridCanvasRef = useRef(null);
+    const adjustGridToZoomRef = useRef(null);
 
     const _deviceDisplayRef = useRef();
     const _deviceRectsRef = useRef({});
@@ -469,6 +475,7 @@ export default function GameWorld(props) {
     }
 
     function resetZoom () {
+        adjustGridToZoomRef.current && adjustGridToZoomRef.current(1)
         _canvasRef.current.setZoom(1)  // reset zoom so pan actions work as expected
         _canvasRef.current.absolutePan({
             x: 0,
@@ -799,17 +806,15 @@ export default function GameWorld(props) {
 
         _canvasRef.current.on('mouse:wheel', function(opt) {
 
-            const MIN_ZOOM = 0.6
-            const MAX_ZOOM = 15
-
             const delta = opt.e.deltaY;
 
             const curr_zoom = _canvasRef.current.getZoom();
-            var new_zoom = curr_zoom * (0.99 ** delta);
+            var new_zoom = curr_zoom * (0.995 ** delta);
 
             if (new_zoom > MAX_ZOOM) new_zoom = MAX_ZOOM;
             else if (new_zoom < MIN_ZOOM) new_zoom = MIN_ZOOM;
 
+            adjustGridToZoomRef.current && adjustGridToZoomRef.current(new_zoom);
             _canvasRef.current.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, new_zoom);
             opt.e.preventDefault();
             opt.e.stopPropagation();
@@ -1144,68 +1149,59 @@ export default function GameWorld(props) {
 
         }
 
-         //
-        // Grid lines
         //
-        const DRAW_GRID_LINES = true
-        if (DRAW_GRID_LINES) {
-            //
-            // Grid lines parallel to Y-axis
-            //
-            for (var xi = 0; xi < SIDE; xi += GRID_SPACING){
-                canvi.add(new fabric.Line([
-                    PAD_X + xi*GRID,
-                    PAD_Y + SIDE*GRID,
-                    PAD_X + xi*GRID,
-                    PAD_Y + SIDE*GRID*2
-                ], { stroke: STROKE, strokeWidth: STROKE_WIDTH_GRID_MEDIUM, selectable: false, hoverCursor: 'default' }));
-            }
-            for (var xi = SIDE; xi <= SIDE*2; xi += GRID_SPACING){
-                canvi.add(new fabric.Line([
-                    PAD_X + xi*GRID,
-                    PAD_Y + 0,
-                    PAD_X + xi*GRID,
-                    PAD_Y + SIDE*GRID*3
-                ], { stroke: STROKE, strokeWidth: STROKE_WIDTH_GRID_MEDIUM, selectable: false, hoverCursor: 'default' }));
-            }
-            for (var xi = 2*SIDE+GRID_SPACING; xi <= SIDE*4; xi += GRID_SPACING){
-                canvi.add(new fabric.Line([
-                    PAD_X + xi*GRID,
-                    PAD_Y + SIDE*GRID,
-                    PAD_X + xi*GRID,
-                    PAD_Y + SIDE*GRID*2
-                ], { stroke: STROKE, strokeWidth: STROKE_WIDTH_GRID_MEDIUM, selectable: false, hoverCursor: 'default' }));
-            }
+        // Grid lines (created using a canvas pattern)
+        //
+        const { pattern, adjustToZoom } = setupZoomableGridPattern(gridCanvasRef, {
+            // Pattern will be twice as big as real pixels at max zoom level
+            superSample: MAX_ZOOM * 2,
+            // To start with, show grid lines every 10th grid square
+            size: GRID * 2 * 5,
+            color: "rgba(255, 255, 255, 0.3)",
+            strokeWidth: 1,
+            fractionWidthFactor: 0.5,
+            zoomSteps: [
+                // At zoom 2x, show thinner lines and 1 extra division of the grid
+                {
+                    min: 2,
+                    max: 4,
+                    widthFactor: 0.5,
+                    fractionsCount: 1,
+                },
+                // At zoom 4x, show even thinner lines
+                {
+                    min: 4,
+                    max: 8,
+                    widthFactor: 0.25,
+                    fractionsCount: 1,
+                },
+                // At zoom 8x, show lines for every grid square
+                {
+                    min: 8,
+                    widthFactor: 0.125,
+                    fractionsCount: 9,
+                },
+            ]
+        })
+        adjustGridToZoomRef.current = adjustToZoom
+        Array(6).fill().map((_, face) => {
+            const ori = map_face_to_left_top (face)
 
-            //
-            // Grid lines parallel to X-axis
-            //
-            for (var yi = 0; yi < SIDE; yi += GRID_SPACING){
-                canvi.add(new fabric.Line([
-                    PAD_X + SIDE*GRID,
-                    PAD_Y + yi*GRID,
-                    PAD_X + SIDE*GRID*2,
-                    PAD_Y + yi*GRID
-                ], { stroke: STROKE, strokeWidth: STROKE_WIDTH_GRID_MEDIUM, selectable: false, hoverCursor: 'default' }));
-            }
-            for (var yi = SIDE; yi < 2*SIDE+1; yi += GRID_SPACING){
-                canvi.add(new fabric.Line([
-                    PAD_X + 0,
-                    PAD_Y + yi*GRID,
-                    PAD_X + SIDE*GRID*4,
-                    PAD_Y + yi*GRID
-                ], { stroke: STROKE, strokeWidth: STROKE_WIDTH_GRID_MEDIUM, selectable: false, hoverCursor: 'default' }));
-            }
-            for (var yi = 2*SIDE+GRID_SPACING; yi <= 3*SIDE; yi += GRID_SPACING){
-                canvi.add(new fabric.Line([
-                    PAD_X + SIDE*GRID,
-                    PAD_Y + yi*GRID,
-                    PAD_X + SIDE*GRID*2,
-                    PAD_Y + yi*GRID
-                ], { stroke: STROKE, strokeWidth: STROKE_WIDTH_GRID_MEDIUM, selectable: false, hoverCursor: 'default' }));
-            }
-        }
-
+            const rect = new fabric.Rect({
+                height: GRID*SIDE,
+                width: GRID*SIDE,
+                left: ori.left,
+                top: ori.top,
+                fill: pattern,
+                selectable: false,
+                hoverCursor: 'default',
+                visible: true,
+                strokeWidth: 0,
+                // Disable object caching to disable limit on the size of the pattern
+                objectCaching: false
+            });
+            canvi.add (rect)
+        })
     }
 
     const drawMode = canvi => {
@@ -1242,7 +1238,7 @@ export default function GameWorld(props) {
 
         for (var element of [0,2,4,6,8]) {
 
-            var collection = {}
+            const collection = {}
             for (var face of [0,1,2,3,4,5]) {
 
                 const face_ori = find_face_ori (face)
